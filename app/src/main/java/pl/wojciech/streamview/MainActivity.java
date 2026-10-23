@@ -1,0 +1,18 @@
+package pl.wojciech.streamview;
+
+import android.app.*; import android.os.*; import android.graphics.Color; import android.view.*; import android.view.inputmethod.InputMethodManager; import android.content.Context; import android.webkit.*; import android.widget.*;
+
+public class MainActivity extends Activity {
+ LinearLayout root,bar; EditText address; WebView web; View customView; WebChromeClient.CustomViewCallback customCallback; FrameLayout fullscreen;
+ @Override public void onCreate(Bundle b){super.onCreate(b);build();}
+ void build(){
+  root=new LinearLayout(this);root.setOrientation(1);root.setBackgroundColor(Color.rgb(16,18,24));bar=new LinearLayout(this);bar.setGravity(Gravity.CENTER_VERTICAL);bar.setPadding(8,8,8,8);bar.setBackgroundColor(Color.rgb(29,32,40));
+  Button back=button("‹");back.setOnClickListener(v->{if(web.canGoBack())web.goBack();});address=new EditText(this);address.setSingleLine(true);address.setTextColor(Color.WHITE);address.setHintTextColor(Color.LTGRAY);address.setHint("Wpisz adres lub wyszukaj");address.setTextSize(14);address.setPadding(12,0,12,0);address.setBackgroundColor(Color.rgb(43,47,58));address.setImeOptions(6);address.setOnEditorActionListener((v,a,e)->{load(address.getText().toString());((InputMethodManager)getSystemService(Context.INPUT_METHOD_SERVICE)).hideSoftInputFromWindow(address.getWindowToken(),0);return true;});Button go=button("Idź");go.setOnClickListener(v->load(address.getText().toString()));bar.addView(back,new LinearLayout.LayoutParams(42,48));bar.addView(address,new LinearLayout.LayoutParams(0,48,1));bar.addView(go,new LinearLayout.LayoutParams(52,48));
+  web=new WebView(this);web.setBackgroundColor(Color.BLACK);WebSettings s=web.getSettings();s.setJavaScriptEnabled(true);s.setDomStorageEnabled(true);s.setMediaPlaybackRequiresUserGesture(false);s.setLoadsImagesAutomatically(true);s.setUseWideViewPort(true);s.setLoadWithOverviewMode(true);s.setBuiltInZoomControls(true);s.setDisplayZoomControls(false);s.setSupportMultipleWindows(true);s.setUserAgentString(s.getUserAgentString()+" StreamView/1.0");web.setWebViewClient(new WebViewClient(){@Override public void onPageStarted(WebView v,String url,android.graphics.Bitmap f){address.setText(url);}});web.setWebChromeClient(new WebChromeClient(){@Override public void onShowCustomView(View view,CustomViewCallback callback){if(customView!=null){callback.onCustomViewHidden();return;}customView=view;customCallback=callback;fullscreen=new FrameLayout(MainActivity.this);fullscreen.setBackgroundColor(Color.BLACK);fullscreen.addView(view,new FrameLayout.LayoutParams(-1,-1));setContentView(fullscreen);immersive(true);}@Override public void onHideCustomView(){exitFullscreen();}});root.addView(bar,new LinearLayout.LayoutParams(-1,64));root.addView(web,new LinearLayout.LayoutParams(-1,0,1));setContentView(root);load("https://www.google.com");
+ }
+ Button button(String t){Button b=new Button(this);b.setText(t);b.setTextColor(Color.WHITE);b.setAllCaps(false);return b;}
+ void load(String t){if(t==null||t.trim().isEmpty())return;String u=t.trim();if(!u.matches("(?i)^[a-z][a-z0-9+.-]*://.*")){if(u.contains(".")&&!u.contains(" "))u="https://"+u;else u="https://www.google.com/search?q="+android.net.Uri.encode(u);}web.loadUrl(u);}
+ void immersive(boolean on){getWindow().getDecorView().setSystemUiVisibility(on?5894|1024|512|4096:0);}
+ void exitFullscreen(){if(customView==null)return;fullscreen.removeView(customView);customView=null;setContentView(root);immersive(false);if(customCallback!=null){customCallback.onCustomViewHidden();customCallback=null;}}
+ @Override public void onBackPressed(){if(customView!=null){exitFullscreen();return;}if(web!=null&&web.canGoBack())web.goBack();else super.onBackPressed();}
+}
